@@ -31,6 +31,8 @@ async function run() {
 
     const petCollection = db.collection("pets");
 
+    const adoptCollection = db.collection("adopts");
+
     app.get('/pet', async(req, res ) => {
         const result = await petCollection.find().toArray()
         res.json(result); 
@@ -64,6 +66,12 @@ async function run() {
     app.delete('/pet/:id', async (req, res) => {
         const {id} = req.params
         const result = await petCollection.deleteOne({_id: new ObjectId(id)})
+        res.json(result);
+    })
+
+    app.post('/adopt', async (req, res) => {
+        const adoptData = req.body
+        const result = await adoptCollection.insertOne(adoptData)
         res.json(result);
     })
     
