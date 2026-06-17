@@ -69,11 +69,18 @@ async function run() {
         res.json(result);
     })
 
-    app.get('/adopt/:petId', async (req, res) => {
-        const {petId} = req.params
-        const result = await adoptCollection.find({ petId: petId }).toArray();
-        res.json(result);
-    })
+    // app.get('/adopt/:petId', async (req, res) => {
+    //     const {petId} = req.params
+    //     const result = await adoptCollection.find({ petId: petId }).toArray();
+    //     res.json(result);
+    // })
+
+    app.get("/adopt/user/:userId", async (req, res) => {
+        const { userId } = req.params;
+        const result = await adoptCollection.find({ userId }).sort({ createdAt: -1 }).toArray();
+
+        res.send(result);
+    });
 
     app.post('/adopt', async (req, res) => {
         const adoptData = req.body
