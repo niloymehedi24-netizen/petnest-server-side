@@ -22,6 +22,20 @@ const client = new MongoClient(uri, {
   }
 });
 
+const verifyToken = (req, res, next) => {
+    const authHeader = req?.headers.authorization
+    if(!authHeader){
+        return res.status(401).json({message: "Unauthorized user logged in"})
+    }
+
+    const token = authHeader.split(" ")[1]
+    if(!token){
+        return res.status(401).json({message: "Unauthorized user logged in"})
+    }
+
+    next();
+}
+
 async function run() {
   try {
     
@@ -47,14 +61,7 @@ async function run() {
 
     // middleware
 
-    app.get('/pet/:id', (req, res, next) => {
-        const header = req.headers.authorization
-        
-        console.log(header);
-        next()
-        
-        
-    }, async (req, res) => {
+    app.get('/pet/:id', verifyToken, async (req, res) => {
         const {id} = req.params
 
         const result = await petCollection.findOne({_id: new ObjectId(id)})
