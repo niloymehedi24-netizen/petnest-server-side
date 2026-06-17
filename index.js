@@ -6,6 +6,7 @@ const dotenv = require('dotenv');
 const cors = require("cors")
 dotenv.config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 const uri = process.env.MONGODB_URI;
 
 const app = express();
@@ -22,7 +23,11 @@ const client = new MongoClient(uri, {
   }
 });
 
-const verifyToken = (req, res, next) => {
+const JWKS = createRemoteJWKSet(
+    new URL("http://localhost:3000/api/auth/jwks")
+)
+
+const verifyToken = async (req, res, next) => {
     const authHeader = req?.headers.authorization
     if(!authHeader){
         return res.status(401).json({message: "Unauthorized user logged in"})
@@ -33,7 +38,13 @@ const verifyToken = (req, res, next) => {
         return res.status(401).json({message: "Unauthorized user logged in"})
     }
 
-    next();
+    try {
+        const {payload} = await jwtVerify(token, JWKS)
+        console.log(payload);
+        next();
+    } catch (error) {
+        return res.status(403).json({message: "Forbidden"})
+    }
 }
 
 async function run() {
@@ -52,7 +63,7 @@ async function run() {
         res.json(result); 
     })
 
-    app.post('/pet', async (req, res) => {
+    app.post('/pet', verifyToken, async (req, res) => {
         const petData = req.body
         console.log(petData);
         const result = await petCollection.insertOne(petData)
@@ -68,7 +79,7 @@ async function run() {
         res.json(result);
     })
 
-    app.patch('/pet/:id', async (req, res) => {
+    app.patch('/pet/:id', verifyToken, async (req, res) => {
         const {id} = req.params
         const updatedData = req.body
 
@@ -85,12 +96,6 @@ async function run() {
         res.json(result);
     })
 
-    // app.get('/adopt/:petId', async (req, res) => {
-    //     const {petId} = req.params
-    //     const result = await adoptCollection.find({ petId: petId }).toArray();
-    //     res.json(result);
-    // })
-
     app.get("/adopt/user/:userId", async (req, res) => {
         const { userId } = req.params;
         const result = await adoptCollection.find({ userId }).sort({ createdAt: -1 }).toArray();
@@ -98,13 +103,13 @@ async function run() {
         res.send(result);
     });
 
-    app.post('/adopt', async (req, res) => {
+    app.post('/adopt', verifyToken, async (req, res) => {
         const adoptData = req.body
         const result = await adoptCollection.insertOne(adoptData)
         res.json(result);
     })
 
-    app.delete('/adopt/:id', async (req, res) => {
+    app.delete('/adopt/:id', verifyToken, async (req, res) => {
         const {id} = req.params
         const result = await adoptCollection.deleteOne({_id: new ObjectId(id)})
         res.json(result);
