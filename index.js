@@ -45,7 +45,16 @@ async function run() {
         res.json(result);
     })
 
-    app.get('/pet/:id', async (req, res) => {
+    // middleware
+
+    app.get('/pet/:id', (req, res, next) => {
+        const header = req.headers.authorization
+        
+        console.log(header);
+        next()
+        
+        
+    }, async (req, res) => {
         const {id} = req.params
 
         const result = await petCollection.findOne({_id: new ObjectId(id)})
