@@ -63,10 +63,38 @@ async function run() {
     res.json(result);
     }); 
 
-    app.get('/pet', async(req, res ) => {
-        const result = await petCollection.find().toArray()
-        res.json(result); 
-    })
+    app.get("/pet", async (req, res) => {
+    try {
+    const { search = "", species = "" } = req.query;
+
+    const query = {};
+
+    // Search by pet name
+    if (search) {
+      query.name = {
+        $regex: search,
+        $options: "i",
+      };
+    }
+
+    // Filter by species
+    if (species) {
+      const speciesArray = species.split(",");
+
+      query.petType = {
+        $in: speciesArray,
+      };
+    }
+
+    const result = await petCollection.find(query).toArray();
+
+    res.send(result);
+    } catch (err) {
+    res.status(500).send({
+      message: err.message,
+    });
+    }
+    });
 
     app.post('/pet', verifyToken, async (req, res) => {
         const petData = req.body
